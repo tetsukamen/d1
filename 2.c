@@ -348,6 +348,7 @@ int main(int argc, char **argv)
 
     /* 閾値Tの計算 */
     int T = calcT(&originalImage);
+    printf("%d\n", T);
 
     // /* フィルタリング */
     filteringImage(&resultImage, &originalImage, T);
