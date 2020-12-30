@@ -256,17 +256,10 @@ int calcT(image_t *originalImage)
  *   画像構造体 image_t *originalImage の画像をフィルタリング(エッジ
  * 強調)して、image_t *resultImage に格納する
  */
-void filteringImage(image_t *resultImage, image_t *originalImage)
+void filteringImage(image_t *resultImage, image_t *originalImage, int T)
 {
     int x, y;
-    int m;              // フィルタをy方向に動かすための変数
-    int n;              // フィルタをx方向に動かすための変数
-    int i_diff, j_diff; // i,jからの位置の偏差
     int width, height;
-    int gij;                                 // フィルタ計算の結果を保持する変数
-    int c[9] = {1, 1, 1, 1, -8, 1, 1, 1, 1}; // 水平方向のフィルタ定義
-    int originalImageData;                   // オリジナル画像の階調値
-    int originalImageDataIdx;                // オリジナル画像の階調値のインデックス
 
     /* originalImage と resultImage のサイズが違う場合は、共通部分のみ */
     /* を処理する。*/
@@ -277,26 +270,7 @@ void filteringImage(image_t *resultImage, image_t *originalImage)
     {
         for (x = 0; x < width; x++)
         {
-            gij = 0; // 初期化
-            for (m = 0; m < 3; m++)
-            {
-                i_diff = m - 1;
-                for (n = 0; n < 3; n++)
-                {
-                    j_diff = n - 1;
-                    originalImageDataIdx = (x + i_diff) + originalImage->width * (y + j_diff);
-                    if (originalImageDataIdx >= 0 && originalImageDataIdx <= originalImage->width * originalImage->height)
-                    {
-                        originalImageData = originalImage->data[originalImageDataIdx];
-                    }
-                    else
-                    {
-                        originalImageData = 0;
-                    }
-                    gij += c[n + m * 3] * originalImageData;
-                }
-            }
-            resultImage->data[x + resultImage->width * y] = min(resultImage->maxValue, max(0, gij * resultImage->maxValue / originalImage->maxValue));
+            resultImage->data[x + resultImage->width * y] = originalImage->data[x + originalImage->width * y] > T ? 255 : 0;
         }
     }
 }
@@ -370,20 +344,19 @@ int main(int argc, char **argv)
     readPgmRawBitmapData(infp, &originalImage);
 
     /* 結果画像の画像構造体を初期化する。画素数、階調数は元画像と同じ */
-    initImage(&resultImage, originalImage.width, originalImage.height,
-              originalImage.maxValue);
+    initImage(&resultImage, originalImage.width, originalImage.height, originalImage.maxValue);
 
     /* 閾値Tの計算 */
     int T = calcT(&originalImage);
 
     // /* フィルタリング */
-    // filteringImage(&resultImage, &originalImage);
+    filteringImage(&resultImage, &originalImage, T);
 
     // /* 画像ファイルのヘッダ部分の書き込み */
-    // writePgmRawHeader(outfp, &resultImage);
+    writePgmRawHeader(outfp, &resultImage);
 
     // /* 画像ファイルのビットマップデータの書き込み */
-    // writePgmRawBitmapData(outfp, &resultImage);
+    writePgmRawBitmapData(outfp, &resultImage);
 
     return 0;
 }
